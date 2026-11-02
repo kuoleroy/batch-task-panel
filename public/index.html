@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>批量任务调度面板</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; }
+  input { padding: 6px; margin: 2px; }
+  button { padding: 6px 14px; cursor: pointer; }
+  table { border-collapse: collapse; margin-top: 16px; width: 100%; }
+  td, th { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
+  .queued { color: #b8860b; } .ok { color: green; } .err { color: #c00; }
+</style>
+</head>
+<body>
+<h2>批量任务调度面板</h2>
+<div>
+  <input id="u" placeholder="用户名" value="admin">
+  <input id="p" type="password" placeholder="密码" value="admin123">
+  <button onclick="login()">登录</button>
+  <span id="me"></span>
+</div>
+<div>
+  <input id="name" placeholder="任务名">
+  <select id="type"><option>check-in</option><option>sign</option><option>claim</option></select>
+  <button onclick="addTask()">创建任务</button>
+  <button onclick="loadStats()">队列状态</button>
+  <span id="stats"></span>
+</div>
+<table id="tbl"><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>创建人</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+let TOKEN = '';
+const H = () => ({ 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN });
+async function login() {
+  const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: u.value, password: p.value }) });
+  if (!r.ok) return me.textContent = '登录失败', me.className = 'err';
+  TOKEN = (await r.json()).token; me.textContent = '已登录'; me.className = 'ok'; load();
+}
+async function addTask() {
+  await fetch('/api/tasks', { method: 'POST', headers: H(), body: JSON.stringify({ name: name.value, type: type.value }) });
+  load();
+}
+async function loadStats() {
+  const s = await (await fetch('/api/queue/stats', { headers: H() })).json();
+  stats.textContent = `队列 ${s.depth} / 完成 ${s.done}（${s.source}）`;
+}
+async function load() {
+  if (!TOKEN) return;
+  const { tasks } = await (await fetch('/api/tasks', { headers: H() })).json();
+  tbl.querySelector('tbody').innerHTML = tasks.map(t =>
+    `<tr><td>${t.name}</td><td>${t.type}</td><td class="${t.status === 'queued' ? 'queued' : 'ok'}">${t.status}</td><td>${t.createdBy}</td>
+     <td><button onclick="del('${t.id}')">删</button></td></tr>`).join('');
+}
+async function del(id) { await fetch('/api/tasks/' + id, { method: 'DELETE', headers: H() }); load(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "batch-task-panel",
+  "version": "1.0.0",
+  "description": "Express + JWT + Redis 任务调度面板（简历作品集 demo）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "smoke": "node smoke.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5"
+  }
+}
